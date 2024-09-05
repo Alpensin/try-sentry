@@ -38,13 +38,32 @@ func main() {
 	app.Use(middleware.Recover())
 
 	// Once it's done, you can attach the handler as one of your middleware
-	app.Use(sentryecho.New(sentryecho.Options{}))
-
+	app.Use(sentryecho.New(sentryecho.Options{
+		Repanic: true,
+	}))
+	app.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(ctx echo.Context) error {
+			if hub := sentryecho.GetHubFromContext(ctx); hub != nil {
+				hub.Scope().SetTag("someRandomTag", "maybeYouNeedIt")
+			}
+			return next(ctx)
+		}
+	})
 	// Set up routes
 	app.GET("/", func(ctx echo.Context) error {
+		if hub := sentryecho.GetHubFromContext(ctx); hub != nil {
+			hub.WithScope(func(scope *sentry.Scope) {
+				scope.SetExtra("unwantedQuery", "someQueryDataMaybe")
+				hub.CaptureMessage("User provided unwanted query string, but we recovered just fine")
+			})
+		}
 		return ctx.String(http.StatusOK, "Hello, World!")
 	})
-
+	app.GET("/foo", func(ctx echo.Context) error {
+		// sentryecho handler will catch it just fine. Also, because we attached "someRandomTag"
+		// in the middleware before, it will be sent through as well
+		panic("y tho")
+	})
 	// And run it
 	app.Logger.Fatal(app.Start(":3000"))
 }
