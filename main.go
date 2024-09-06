@@ -27,11 +27,17 @@ func main() {
 	logger := zerolog.New(&zerolog.ConsoleWriter{Out: os.Stderr})
 	sentryLevels := []zerolog.Level{zerolog.ErrorLevel, zerolog.FatalLevel, zerolog.PanicLevel}
 	sentryDSN := os.Getenv("SENTRY_DSN")
-	sentryHook, err := zlog.NewHook(sentryLevels, sentry.ClientOptions{
+	err = sentry.Init(sentry.ClientOptions{
 		Dsn: sentryDSN,
 	})
 	if err != nil {
 		panic("Sentry initialization failed")
+	}
+	sentryHook, err := zlog.NewHook(sentryLevels, sentry.ClientOptions{
+		Dsn: sentryDSN,
+	})
+	if err != nil {
+		panic("Hook initialization failed")
 	}
 	defer sentryHook.Flush(5 * time.Second)
 
@@ -50,7 +56,7 @@ func main() {
 	// Set up routes
 	app.GET("/", func(ctx echo.Context) error {
 		err := errors.New("seems we have an error here")
-		logger.Error().Err(err).Msg("My error")
+		logger.Error().Err(err).Str("foo", "bar").Msg("My error")
 		return ctx.String(http.StatusOK, "Hello, World!")
 	})
 	app.GET("/foo", func(ctx echo.Context) error {

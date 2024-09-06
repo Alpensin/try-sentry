@@ -112,6 +112,7 @@ var levelMap = map[zerolog.Level]sentry.Level{
 
 func (h *Hook) entryToEvent(e *zerolog.Event, level zerolog.Level, message string) *sentry.Event {
 	// Initialize the Sentry s
+
 	s := &sentry.Event{
 		// Breadcrumbs: []*sentry.Breadcrumb{},
 		Dist:        "ThatsDist",
