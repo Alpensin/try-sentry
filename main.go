@@ -2,15 +2,18 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
 
+	zlogsentry "github.com/archdx/zerolog-sentry"
 	"github.com/getsentry/sentry-go"
 	sentryecho "github.com/getsentry/sentry-go/echo"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/rs/zerolog"
 )
 
 func main() {
@@ -30,7 +33,13 @@ func main() {
 	}); err != nil {
 		fmt.Printf("Sentry initialization failed: %v\n", err)
 	}
-
+	w, err := zlogsentry.New(sentryDSN, zlogsentry.WithEnvironment("dev"), zlogsentry.WithRelease("1.0.0"))
+	if err != nil {
+		fmt.Printf("zlogsentry initialization failed: %v\n", err)
+	}
+	defer w.Close()
+	multi := zerolog.MultiLevelWriter(os.Stdout, w)
+	logger := zerolog.New(multi).With().Timestamp().Logger()
 	// Then create your app
 	app := echo.New()
 
@@ -51,12 +60,7 @@ func main() {
 	})
 	// Set up routes
 	app.GET("/", func(ctx echo.Context) error {
-		if hub := sentryecho.GetHubFromContext(ctx); hub != nil {
-			hub.WithScope(func(scope *sentry.Scope) {
-				scope.SetExtra("unwantedQuery", "someQueryDataMaybe")
-				hub.CaptureMessage("User provided unwanted query string, but we recovered just fine")
-			})
-		}
+		logger.Error().Err(errors.New("dial timeout")).Str("gang", "bang").Msg("test message")
 		return ctx.String(http.StatusOK, "Hello, World!")
 	})
 	app.GET("/foo", func(ctx echo.Context) error {
