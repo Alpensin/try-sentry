@@ -6,6 +6,7 @@ require (
 	github.com/getsentry/sentry-go v0.28.1
 	github.com/joho/godotenv v1.5.1
 	github.com/labstack/echo/v4 v4.10.0
+	github.com/rs/zerolog v1.33.0
 )
 
 require (
