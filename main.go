@@ -22,7 +22,8 @@ func main() {
 	sentryDSN := os.Getenv("SENTRY_DSN")
 	// To initialize Sentry's handler, you need to initialize Sentry itself beforehand
 	if err := sentry.Init(sentry.ClientOptions{
-		Dsn: sentryDSN,
+		Dsn:           sentryDSN,
+		EnableTracing: true,
 		// Set TracesSampleRate to 1.0 to capture 100%
 		// of transactions for tracing.
 		// We recommend adjusting this value in production,
@@ -59,6 +60,11 @@ func main() {
 		}
 		return ctx.String(http.StatusOK, "Hello, World!")
 	})
+
+	app.GET("/bar", func(ctx echo.Context) error {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Some error")
+	})
+
 	app.GET("/foo", func(ctx echo.Context) error {
 		// sentryecho handler will catch it just fine. Also, because we attached "someRandomTag"
 		// in the middleware before, it will be sent through as well
